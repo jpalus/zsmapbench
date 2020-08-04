@@ -10,6 +10,7 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
+#include <linux/version.h>
 
 #include "linux/zsmalloc.h"
 
@@ -32,7 +33,11 @@ static int zsmb_kthread(void *ptr)
 
 	pr_info("starting zsmb_kthread\n");
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+	pool = zs_create_pool("zsmapbench");
+#else
 	pool = zs_create_pool("zsmapbench", GFP_NOIO | __GFP_HIGHMEM);
+#endif
 	if (!pool)
 		return -ENOMEM;
 
@@ -45,7 +50,11 @@ static int zsmb_kthread(void *ptr)
 	memset(handles, 0, sizeof(unsigned long) * handles_nr);
 
 	for (i = 0; i < handles_nr; i++) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+		handles[i] = zs_malloc(pool, size, GFP_NOIO | __GFP_HIGHMEM);
+#else
 		handles[i] = zs_malloc(pool, size);
+#endif
 		if(!handles[i]) {
 			pr_err("zs_malloc failed\n");
 			err = -ENOMEM;
